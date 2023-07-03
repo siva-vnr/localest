@@ -1,0 +1,29 @@
+services:
+  backend:
+    build: .
+    ports:
+      - 5000:5000
+      - 9229:9229  # debugger port
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/.pnpm-store
+      - /usr/src/app/node_modules
+    command: pnpm start:docker
+    depends_on:
+      - mysql-db
+    environment:
+      PORT: 5000
+      DATABASE_URL: mysql://root:siva%40123%23@mysql-db:3306/localest
+
+  mysql-db:
+    image: mysql:8
+    ports:
+      - "3306:3306"
+    env_file:
+      - ".env"
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: "siva@123#"
+      MYSQL_DATABASE: "localest"
+      MYSQL_USER: "localest"
+      MYSQL_PASSWORD: "localest123"
