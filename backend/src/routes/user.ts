@@ -9,21 +9,34 @@ class userRoute {
   registerRoutes() {
     this.getAllUsers();
     this.createNewUser();
+    this.updateUser();
+    this.getUserById();
     return this.route;
   }
 
   createNewUser() {
-    this.route.get(
-      '/new-user',
+    this.route.post(
+      '/create',
       async (request: Request, response: Response) => {
-        let users = await userModle.registerNewUser({
-          name: 'sivaaa',
-          email: 'siva@superbotics.in',
-          password: 'siva@123#',
-          token: undefined,
-          roleId: 1,
-        });
-        response.json({ users });
+        let createUser = await userModle.registerNewUser(request.body.params);
+        response.status(createUser.statusCode).json(createUser);
+      }
+    );
+  }
+
+  getUserById(){
+    this.route.get('/:userId', async (request: Request, response: Response) => {
+      let users = await userModle.getUsersById(parseInt(request.params.userId));
+      response.json({users});
+    });
+  }
+
+  updateUser(){
+    this.route.put(
+      '/update',
+      async (request: Request, response: Response) => {
+        let updateUser = await userModle.updateUser(request.body.params);
+        response.status(updateUser.statusCode).json(updateUser);
       }
     );
   }
