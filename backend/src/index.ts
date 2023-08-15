@@ -3,13 +3,17 @@ import morgan from 'morgan';
 import userRoute from './routes/user';
 
 const app = express();
+
 app.use(morgan('dev')); // logger
+
+app.use(express.json());
  
 app.get('/', async (req, res) => {
   res.json({ hello: "world!" });
 });
 
-app.use('/users', userRoute.registerRoutes())
+app.use('/users', userRoute.registerRoutes());
+
 
  
 const port = Number(process.env.PORT ?? 8080);
