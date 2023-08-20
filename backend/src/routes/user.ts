@@ -4,7 +4,7 @@ import userModle from '../modules/user/index';
 class userRoute {
   route: any;
   constructor() {
-    this.route = Router();
+    this.route = Router();  
   }
   registerRoutes() {
     this.getAllUsers();
