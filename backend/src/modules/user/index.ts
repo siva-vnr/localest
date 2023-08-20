@@ -1,21 +1,26 @@
 import { PrismaClient, Prisma, User } from '@prisma/client';
 import { userInterface } from '../../interface/user';
+import { resultInterface } from '../../interface/result';
+import userEvents from '../../events/user';
 import events from 'events';
 
 class user {
   prismaUser: any;
   prisma: any;
-  result: any;
+  result: resultInterface;
+  eventEmitter: NodeJS.EventEmitter;
   constructor() {
+    this.eventEmitter = new events.EventEmitter();
+    var userEventListianer = new userEvents(this.eventEmitter);
+    userEventListianer.registerEvent();
     this.prisma = new PrismaClient();
     this.prismaUser = this.prisma.user;
     this.result = {
       error: false,
-      message: 'create user ',
+      message: 'user',
       statusCode: 200,
       data: {},
     };
-    const eventEmitter = new events();
   }
 
   async getUsers() {
@@ -23,7 +28,8 @@ class user {
   }
 
   async getUsersById(userId: number) {
-    let user = await this.prismaUser
+    this.eventEmitter.emit("beforeGetUsersByIdEvent");
+    await this.prismaUser
       .findUnique({
         where: {
           id: userId,
@@ -32,6 +38,7 @@ class user {
       .then((getUser: User) => {
         this.result.data = getUser;
         this.result.message = 'Succesfully fetched';
+        this.result.statusCode = 200;
       })
       .catch((error: Error) => {
         this.errorHandling(error);
@@ -40,11 +47,13 @@ class user {
         await this.prisma.$disconnect();
       });
     
+    this.eventEmitter.emit("afterGetUsersByIdEvent",this.result);
     return this.result;
   }
 
   async getUsersByEmail(userEmail: string) {
-    let user = await this.prismaUser
+    this.eventEmitter.emit("beforeGetUsersByIdEmail");
+    await this.prismaUser
       .findUnique({
         where: {
           email: userEmail,
@@ -53,6 +62,7 @@ class user {
       .then((getUser: User) => {
         this.result.data = getUser;
         this.result.message = 'Succesfully fetched';
+        this.result.statusCode = 200;
       })
       .catch((error: Error) => {
         this.errorHandling(error);
@@ -60,16 +70,18 @@ class user {
       .finally(async () => {
         await this.prisma.$disconnect();
       });
-    
+      this.eventEmitter.emit("afterGetUsersByIdEmail",this.result);
     return this.result;
   }
 
   async registerNewUser(userparam: userInterface) {
+    this.eventEmitter.emit("beforeRegisterNewUser");
     await this.prismaUser
       .create({ data: userparam })
       .then((newUser: User) => {
         this.result.data = newUser;
         this.result.message = 'Succesfully created';
+        this.result.statusCode = 200;
       })
       .catch((error: Error) => {
         this.errorHandling(error);
@@ -77,11 +89,12 @@ class user {
       .finally(async () => {
         await this.prisma.$disconnect();
       });
+    this.eventEmitter.emit("afterRegisterNewUser",this.result);
     return this.result;
   }
 
   async updateUser(userparam: userInterface) {
-    console.log(userparam);
+    this.eventEmitter.emit("beforeUpdateUser");
     await this.prismaUser
       .update({
         where: {
@@ -100,22 +113,23 @@ class user {
         await this.prisma.$disconnect();
       });
       
+    this.eventEmitter.emit("afterUpdateUser",this.result);
     return this.result;
   }
 
   errorHandling(error: Error) {
-    console.log(error);
+    this.eventEmitter.emit("beforeUserError");
     this.result.error = true;
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === 'P2002'
     ) {
       this.result.message = 'Email already exists';
-      this.result.status = 400;
+      this.result.statusCode = 400;
       return this.result.message;
     }
     this.result.message = 'Internal server error';
-    this.result.status = 500;
+    this.result.statusCode = 500;
     return this.result.message;
   }
 }
